@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Vagrant-lxc by fgrehm</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Vagrant-lxc</h1>
+        <p>LXC provider for Vagrant</p>
+
+        <p class="view"><a href="https://github.com/fgrehm/vagrant-lxc">View the Project on GitHub <small>fgrehm/vagrant-lxc</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/fgrehm/vagrant-lxc/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/fgrehm/vagrant-lxc/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/fgrehm/vagrant-lxc">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="vagrant-lxc" class="anchor" href="#vagrant-lxc"><span class="octicon octicon-link"></span></a>vagrant-lxc</h1>
+
+<p><a href="https://travis-ci.org/fgrehm/vagrant-lxc"><img src="https://travis-ci.org/fgrehm/vagrant-lxc.png?branch=master" alt="Build Status"></a> <a href="http://badge.fury.io/rb/vagrant-lxc"><img src="https://badge.fury.io/rb/vagrant-lxc.png" alt="Gem Version"></a> <a href="https://codeclimate.com/github/fgrehm/vagrant-lxc"><img src="https://codeclimate.com/github/fgrehm/vagrant-lxc.png" alt="Code Climate"></a> <a href="https://coveralls.io/r/fgrehm/vagrant-lxc"><img src="https://coveralls.io/repos/fgrehm/vagrant-lxc/badge.png?branch=master" alt="Coverage Status"></a></p>
+
+<p><a href="http://lxc.sourceforge.net/">LXC</a> provider for <a href="http://www.vagrantup.com/">Vagrant</a> 1.1+</p>
+
+<p>This is a Vagrant plugin that allows it to control and provision Linux Containers
+as an alternative to the built in VirtualBox provider for Linux hosts.</p>
+
+<h2>
+<a name="features--limitations" class="anchor" href="#features--limitations"><span class="octicon octicon-link"></span></a>Features / Limitations</h2>
+
+<ul>
+<li>Provides the same workflow as the Vagrant VirtualBox provider</li>
+<li>Port forwarding via <a href="http://linux.die.net/man/1/redir"><code>redir</code></a>
+</li>
+<li>Does not support public / private networks</li>
+<li>Assumes you have a <code>lxcbr0</code> bridge configured on your host similar to <a href="https://help.ubuntu.com/lts/serverguide/lxc.html#lxcbr0">Ubuntu's built-in</a>
+</li>
+</ul><h2>
+<a name="requirements" class="anchor" href="#requirements"><span class="octicon octicon-link"></span></a>Requirements</h2>
+
+<ul>
+<li><a href="http://downloads.vagrantup.com/">Vagrant 1.1+</a></li>
+<li>lxc 0.7.5+</li>
+<li>redir (if you are planning to use port forwarding)</li>
+<li>A <a href="https://github.com/fgrehm/vagrant-lxc/wiki/Troubleshooting#im-unable-to-restart-containers">bug-free</a> kernel</li>
+</ul><p>The plugin is known to work better and pretty much out of the box on Ubuntu 12.04+
+hosts and installing the dependencies on it basically means a <code>apt-get install lxc lxc-templates cgroup-lite redir</code>
+and a <code>apt-get update &amp;&amp; apt-get dist-upgrade</code> to upgrade the kernel. For Debian
+hosts you'll need to follow the instructions described on the <a href="https://github.com/fgrehm/vagrant-lxc/wiki/Usage-on-debian-hosts">Wiki</a>.</p>
+
+<p>Some manual steps are required to set up a Linode machine prior to using this
+plugin, please check <a href="https://github.com/fgrehm/vagrant-lxc/wiki/Usage-on-Linode">the wiki</a>
+for more information. Documentation on how to set things up for other distros
+<a href="https://github.com/fgrehm/vagrant-lxc/wiki">are welcome</a> :)</p>
+
+<p>If you are on a Mac or Windows machine, you might want to have a look at <a href="http://the.taoofmac.com/space/HOWTO/Vagrant">this</a>
+blog post for some ideas on how to set things up or check out <a href="https://github.com/fgrehm/vagrant-lxc-vbox-hosts">this other repo</a>
+for a set of Vagrant VirtualBox machines ready for vagrant-lxc usage.</p>
+
+<h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<pre><code>vagrant plugin install vagrant-lxc
+</code></pre>
+
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>After installing, add a <a href="#base-boxes">base box</a> using any name you want, for example:</p>
+
+<pre><code>vagrant box add quantal64 http://bit.ly/vagrant-lxc-quantal64-2013-07-12
+</code></pre>
+
+<p>Then create a Vagrantfile that looks like the following, changing the box name
+to the one you've just added:</p>
+
+<div class="highlight highlight-ruby"><pre><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">"2"</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">"quantal64"</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>And finally run <code>vagrant up --provider=lxc</code>.</p>
+
+<p>If you are using Vagrant 1.2+ you can also set <code>VAGRANT_DEFAULT_PROVIDER</code>
+environmental variable to <code>lxc</code> in order to avoid typing <code>--provider=lxc</code> all
+the time.</p>
+
+<h3>
+<a name="advanced-configuration" class="anchor" href="#advanced-configuration"><span class="octicon octicon-link"></span></a>Advanced configuration</h3>
+
+<p>If you want, you can modify container configurations from within your Vagrantfile
+using the <a href="http://docs.vagrantup.com/v2/providers/configuration.html">provider block</a>:</p>
+
+<div class="highlight highlight-ruby"><pre><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">"2"</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">"quantal64"</span>
+  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provider</span> <span class="ss">:lxc</span> <span class="k">do</span> <span class="o">|</span><span class="n">lxc</span><span class="o">|</span>
+    <span class="c1"># Same effect as as 'customize ["modifyvm", :id, "--memory", "1024"]' for VirtualBox</span>
+    <span class="n">lxc</span><span class="o">.</span><span class="n">customize</span> <span class="s1">'cgroup.memory.limit_in_bytes'</span><span class="p">,</span> <span class="s1">'1024M'</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>vagrant-lxc will then write out <code>lxc.cgroup.memory.limit_in_bytes='1024M'</code> to the
+container config file (usually kept under <code>/var/lib/lxc/&lt;container&gt;/config</code>)
+prior to starting it.</p>
+
+<p>For other configuration options, please check the <a href="http://manpages.ubuntu.com/manpages/quantal/man5/lxc.conf.5.html">lxc.conf manpages</a>.</p>
+
+<h3>
+<a name="avoiding-sudo-passwords" class="anchor" href="#avoiding-sudo-passwords"><span class="octicon octicon-link"></span></a>Avoiding <code>sudo</code> passwords</h3>
+
+<p>This plugin requires <strong>a lot</strong> of <code>sudo</code>ing since <a href="https://wiki.ubuntu.com/UserNamespace">user namespaces</a>
+are not supported on mainstream kernels. Have a look at the <a href="https://github.com/fgrehm/vagrant-lxc/wiki/Avoiding-'sudo'-passwords">Wiki</a>
+to find out how to work around that specially if you are running an OS with sudo
+&lt; 1.8.4 (like Ubuntu 12.04) as you might be affected by a bug.</p>
+
+<h3>
+<a name="base-boxes" class="anchor" href="#base-boxes"><span class="octicon octicon-link"></span></a>Base boxes</h3>
+
+<p>Please check <a href="https://github.com/fgrehm/vagrant-lxc/wiki/Base-boxes">the wiki</a>
+for a list of <a href="https://github.com/fgrehm/vagrant-lxc/wiki/Base-boxes#available-boxes">pre built</a>
+base boxes and have a look at <a href="https://github.com/fgrehm/vagrant-lxc/tree/master/BOXES.md"><code>BOXES.md</code></a>
+for more information on building your own.</p>
+
+<h2>
+<a name="more-information" class="anchor" href="#more-information"><span class="octicon octicon-link"></span></a>More information</h2>
+
+<p>Please refer the <a href="https://github.com/fgrehm/vagrant-lxc/wiki">wiki</a>.</p>
+
+<h2>
+<a name="problems--ideas" class="anchor" href="#problems--ideas"><span class="octicon octicon-link"></span></a>Problems / ideas?</h2>
+
+<p>Please review the <a href="https://github.com/fgrehm/vagrant-lxc/wiki/Troubleshooting">Troubleshooting</a>
+wiki page + <a href="https://github.com/fgrehm/vagrant-lxc/issues?labels=bug&amp;page=1&amp;state=open">known bugs</a>
+list if you have a problem and feel free to use the <a href="https://github.com/fgrehm/vagrant-lxc/issues">issue tracker</a>
+propose new functionality and / or report bugs.</p>
+
+<h2>
+<a name="donating" class="anchor" href="#donating"><span class="octicon octicon-link"></span></a>Donating</h2>
+
+<p>Support this project and <a href="https://github.com/fgrehm">others by fgrehm</a>
+via <a href="https://www.gittip.com/fgrehm/">gittip</a>.</p>
+
+<p><a href="https://www.gittip.com/fgrehm/"><img src="https://rawgithub.com/twolfson/gittip-badge/0.1.0/dist/gittip.png" alt="Support via Gittip"></a></p>
+
+<h2>
+<a name="contributing" class="anchor" href="#contributing"><span class="octicon octicon-link"></span></a>Contributing</h2>
+
+<ol>
+<li>Fork it</li>
+<li>Create your feature branch (<code>git checkout -b my-new-feature</code>)</li>
+<li>Commit your changes (<code>git commit -am 'Add some feature'</code>)</li>
+<li>Push to the branch (<code>git push origin my-new-feature</code>)</li>
+<li>Create new Pull Request</li>
+</ol>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/fgrehm">fgrehm</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
