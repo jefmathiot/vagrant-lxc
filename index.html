@@ -36,7 +36,9 @@
 <p><a href="http://lxc.sourceforge.net/">LXC</a> provider for <a href="http://www.vagrantup.com/">Vagrant</a> 1.1+</p>
 
 <p>This is a Vagrant plugin that allows it to control and provision Linux Containers
-as an alternative to the built in VirtualBox provider for Linux hosts.</p>
+as an alternative to the built in VirtualBox provider for Linux hosts. Check out
+<a href="http://fabiorehm.com/blog/2013/04/28/lxc-provider-for-vagrant/">this blog post</a>
+to see it in action.</p>
 
 <h2>
 <a name="features--limitations" class="anchor" href="#features--limitations"><span class="octicon octicon-link"></span></a>Features / Limitations</h2>
@@ -69,6 +71,9 @@ for more information. Documentation on how to set things up for other distros
 <p>If you are on a Mac or Windows machine, you might want to have a look at <a href="http://the.taoofmac.com/space/HOWTO/Vagrant">this</a>
 blog post for some ideas on how to set things up or check out <a href="https://github.com/fgrehm/vagrant-lxc-vbox-hosts">this other repo</a>
 for a set of Vagrant VirtualBox machines ready for vagrant-lxc usage.</p>
+
+<p><strong>NOTE: Some users have been experiencing networking issues and right now you might need to
+disable checksum offloading as described on <a href="https://github.com/fgrehm/vagrant-lxc/issues/153#issuecomment-26441273">this comment</a></strong></p>
 
 <h2>
 <a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
@@ -107,7 +112,7 @@ using the <a href="http://docs.vagrantup.com/v2/providers/configuration.html">pr
 <div class="highlight highlight-ruby"><pre><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">"2"</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
   <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">"quantal64"</span>
   <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">provider</span> <span class="ss">:lxc</span> <span class="k">do</span> <span class="o">|</span><span class="n">lxc</span><span class="o">|</span>
-    <span class="c1"># Same effect as as 'customize ["modifyvm", :id, "--memory", "1024"]' for VirtualBox</span>
+    <span class="c1"># Same effect as 'customize ["modifyvm", :id, "--memory", "1024"]' for VirtualBox</span>
     <span class="n">lxc</span><span class="o">.</span><span class="n">customize</span> <span class="s1">'cgroup.memory.limit_in_bytes'</span><span class="p">,</span> <span class="s1">'1024M'</span>
   <span class="k">end</span>
 <span class="k">end</span>
@@ -149,7 +154,7 @@ list if you have a problem and feel free to use the <a href="https://github.com/
 propose new functionality and / or report bugs.</p>
 
 <h2>
-<a name="donating" class="anchor" href="#donating"><span class="octicon octicon-link"></span></a>Donating</h2>
+<a name="support" class="anchor" href="#support"><span class="octicon octicon-link"></span></a>Support</h2>
 
 <p>Support this project and <a href="https://github.com/fgrehm">others by fgrehm</a>
 via <a href="https://www.gittip.com/fgrehm/">gittip</a>.</p>
@@ -165,7 +170,7 @@ via <a href="https://www.gittip.com/fgrehm/">gittip</a>.</p>
 <li>Commit your changes (<code>git commit -am 'Add some feature'</code>)</li>
 <li>Push to the branch (<code>git push origin my-new-feature</code>)</li>
 <li>Create new Pull Request</li>
-</ol>
+</ol><p><a href="https://bitdeli.com/free" title="Bitdeli Badge"><img src="https://d2weczhvl823v0.cloudfront.net/fgrehm/vagrant-lxc/trend.png" alt="Bitdeli Badge"></a></p>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/fgrehm">fgrehm</a></p>
