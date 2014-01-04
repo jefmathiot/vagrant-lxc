@@ -24,9 +24,6 @@ namespace :spec do
   types.each do |type, dir|
     desc "Run the code examples in #{dir}"
     RSpec::Core::RakeTask.new(type) do |t|
-      # Tells rspec-fire to verify if constants used really exist
-      ENV['VERIFY_CONSTANT_NAMES'] = '1'
-
       t.pattern = "./#{dir}/**/*_spec.rb"
     end
   end

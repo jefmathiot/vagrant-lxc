@@ -18,18 +18,19 @@ describe Vagrant::LXC::Action::ClearForwardedPorts do
     pids_dir.mkdir
     pids_dir.join('redir_1234.pid').open('w') { |f| f.write(pid) }
     subject.stub(system: true, :` => pid_cmd)
-    subject.call(env)
   end
 
   after { FileUtils.rm_rf data_dir.to_s }
 
   it 'removes all files under pid directory' do
+    subject.call(env)
     Dir[pids_dir.to_s + "/redir_*.pid"].should be_empty
   end
 
   context 'with a valid redir pid' do
     it 'kills known processes' do
-      subject.should have_received(:system).with("pkill -TERM -P #{pid}")
+      subject.should_receive(:system).with("pkill -TERM -P #{pid}")
+      subject.call(env)
     end
   end
 
@@ -37,7 +38,8 @@ describe Vagrant::LXC::Action::ClearForwardedPorts do
     let(:pid_cmd) { 'sudo ls' }
 
     it 'does not kill the process' do
-      subject.should_not have_received(:system).with("pkill -TERM -P #{pid}")
+      subject.should_not_receive(:system).with("pkill -TERM -P #{pid}")
+      subject.call(env)
     end
   end
 end

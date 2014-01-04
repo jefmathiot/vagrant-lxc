@@ -17,7 +17,5 @@ group :development, :test do
   gem 'rake'
   gem 'vagrant-spec', github: 'mitchellh/vagrant-spec'
   gem 'rspec'
-  gem 'rspec-fire',  require: 'rspec/fire'
-  gem 'rspec-spies', require: false
-  gem 'coveralls',   require: false
+  gem 'coveralls', require: false
 end

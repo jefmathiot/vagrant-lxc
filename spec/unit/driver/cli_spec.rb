@@ -3,7 +3,7 @@ require 'unit_helper'
 require 'vagrant-lxc/driver/cli'
 
 describe Vagrant::LXC::Driver::CLI do
-  let(:sudo_wrapper) { instance_double('Vagrant::LXC::SudoWrapper', run: true) }
+  let(:sudo_wrapper) { double(Vagrant::LXC::SudoWrapper, run: true) }
 
   subject { described_class.new(sudo_wrapper) }
 
