@@ -24,6 +24,7 @@ module Vagrant
           argv = parse_options(opts)
           return unless argv
 
+          wrapper_path = Vagrant::LXC.sudo_wrapper_path
           wrapper = create_wrapper!
           sudoers = create_sudoers!(options[:user], wrapper_path)
 
@@ -33,10 +34,6 @@ module Vagrant
           ])
         end
 
-        def wrapper_path
-          "/usr/local/bin/vagrant-lxc-wrapper-#{Vagrant::LXC::VERSION}"
-        end
-        
         def sudoers_path
           "/etc/sudoers.d/vagrant-lxc-#{Vagrant::LXC::VERSION.gsub( /\./, '-')}"
         end
@@ -49,85 +46,118 @@ module Vagrant
             file.puts "#!/usr/bin/env ruby"
             file.puts "# Automatically created by vagrant-lxc"
             file.puts <<-EOF
-            class Whitelist
-              class << self
-                def add(command, *args)
-                  list[command] << args
-                end
+class Whitelist
+  class << self
+    def add(command, *args)
+      list[command] << args
+    end
 
-                def list
-                  @list ||= Hash.new do |key, hsh|
-                    key[hsh] = []
-                  end
-                end
+    def list
+      @list ||= Hash.new do |key, hsh|
+        key[hsh] = []
+      end
+    end
 
-                def allowed(command)
-                  list[command] || []
-                end
+    def allowed(command)
+      list[command] || []
+    end
 
-                def run!(argv)
-                  command, args = `which \#{argv.shift}`.chomp, argv || []
-                  check!(command, args)
-                  puts `\#{command} \#{args.join(" ")}`
-                  exit $?.to_i
-                end
+    def run!(argv)
+      begin
+        command, args = `which \#{argv.shift}`.chomp, argv || []
+        check!(command, args)
+        puts `\#{command} \#{args.join(" ")}`
+        exit $?.to_i
+      rescue => e
+        STDERR.puts e.message
+        exit 1
+      end
+    end
 
-                private
-                def check!(command, args)
-                  allowed(command).each do |checks|
-                    args.each_with_index do |provided, i|
-                      check = checks[i]
-                      continue if match?(check, provided)
-                      return if provided == args.last
-                    end if args.length == checks.length
-                  end
-                  raise_invalid(command, args)
-                end
+    private
+    def check!(command, args)
+      allowed(command).each do |checks|
+        return if valid_args?(args, checks)
+      end
+      raise_invalid(command, args)
+    end
 
-                def match?(check, arg)
-                  check == '**' || check.respond_to?(:match) && check.match(arg) || arg == check
-                end
+    def valid_args?(args, checks)
+      return false unless valid_length?(args, checks)
+      check = nil
+      args.each_with_index do |provided, i|
+        check = checks[i] unless check == '**'
+        return false unless match?(provided, check)
+      end
+      true
+    end
 
-                def raise_invalid(command, args)
-                  raise "Invalid arguments for command \#{command}, " <<
-                    "provided args: \#{args.inspect}"
-                end
-              end
-            end
+    def valid_length?(args, checks)
+      args.length == checks.length || checks.last == '**'
+    end
 
-            base_path = %r{\A/var/lib/lxc/.*}
-            templates_path = %r{\A/use/(share|lib|lib64|local/lib)/lxc/templates/.*}
-            boxes_path = %r{\A#{@env.boxes_path}/.*}
+    def match?(arg, check)
+      check == '**' || check.is_a?(Regexp) && !!check.match(arg) || arg == check
+    end
 
-            ##
-            # Commands from driver.rb
-            # - Container config file
-            Whitelist.add '/bin/cat', base_path
-            # - Shared folders
-            Whitelist.add '/bin/mkdir', '-p-', base_path
-            # - Container config customizations and pruning
-            Whitelist.add '/bin/su', 'root', '-c', 'sed', /.*/, '-ibak', base_path
-            Whitelist.add '/bin/su', 'root', '-c', 'echo', /.*/, '>>', base_path
-            # - Template import
-            Whitelist.add '/bin/cp', boxes_path, templates_path
-            Whitelist.add '/bin/chmod', '+x', templates_path
-            # - Template removal
-            Whitelist.add '/bin/rm', templates_path
+    def raise_invalid(command, args)
+      raise "Invalid arguments for command \#{command}, " <<
+        "provided args: \#{args.inspect}"
+    end
+  end
+end
 
-            ##
-            # Commands from driver/cli.rb
-            Whitelist.add '/usr/bin/lxc-version'
-            Whitelist.add '/usr/bin/lxc-info', '--name', /.*/
-            Whitelist.add '/usr/bin/lxc-create' '--template', /.*/, '--name', /.*/, '**'
-            Whitelist.add '/usr/bin/lxc-destroy',  '--name', /.*/
-            Whitelist.add '/usr/bin/lxc-start', '--name', /.*/, '**'
-            Whitelist.add '/usr/bin/lxc-stop', '--name', /.*/
-            Whitelist.add '/usr/bin/lxc-shutdown' '--name', /.*/
-            Whitelist.add '/usr/bin/lxc-attach' '--name', /.*/, '**'
-            Whitelist.add '/usr/bin/lxc-attach' '-h'
+base = "/var/lib/lxc"
+base_path = %r{\\A\#{base}/.*\\z}
+templates_path = %r{\\A/usr/(share|lib|lib64|local/lib)/lxc/templates/.*\\z}
+boxes_path = %r{\\A#{Regexp.escape(@env.boxes_path.to_s)}/.*\\z}
+gems_path = %r{\\A#{Regexp.escape(@env.gems_path.to_s)}/.*\\z}
+template_src = %r{\\A#{Vagrant::LXC.source_root.join('scripts/lxc-template').to_s}\\z}
 
-            # Watch out for stones
-            Whitelist.run!(ARGV)
+##
+# Commands from provider.rb
+# - Check lxc is installed
+Whitelist.add '/usr/bin/which', /\\Alxc-\\w+\\z/
+
+##
+# Commands from driver.rb
+# - Container config file
+Whitelist.add '/bin/cat', base_path
+# - Shared folders
+Whitelist.add '/bin/mkdir', '-p', base_path
+# - Container config customizations and pruning
+Whitelist.add '/bin/su', 'root', '-c', %r{\\A"sed -e '.*' -ibak \#{base}/.*/config"\\z}
+Whitelist.add '/bin/su', 'root', '-c', %r{\\A"echo '.*' >> \#{base}/.*/config"\\z}
+# - Template import
+Whitelist.add '/bin/cp', boxes_path, templates_path
+Whitelist.add '/bin/cp', gems_path, templates_path
+Whitelist.add '/bin/cp', template_src, templates_path
+Whitelist.add '/bin/chmod', '+x', templates_path
+# - Template removal
+Whitelist.add '/bin/rm', templates_path
+# - Packaging
+Whitelist.add '/bin/su', 'root', '-c', %r{\\A"cd \#{base}/.* && rm -f rootfs\.tar\.gz && tar --numeric-owner -czf /tmp/.*/rootfs\.tar\.gz -C \#{base}/.*/rootfs '\./\.'"\\z}
+Whitelist.add '/bin/chown', /\\A\\d+:\\d+\\z/, %r{\\A/tmp/.*/rootfs\.tar\.gz\\z}
+
+##
+# Commands from driver/cli.rb
+Whitelist.add '/usr/bin/lxc-version'
+Whitelist.add '/usr/bin/lxc-ls'
+Whitelist.add '/usr/bin/lxc-info', '--name', /.*/
+Whitelist.add '/usr/bin/lxc-create', '--template', /.*/, '--name', /.*/, '**'
+Whitelist.add '/usr/bin/lxc-destroy',  '--name', /.*/
+Whitelist.add '/usr/bin/lxc-start', '-d', '--name', /.*/, '**'
+Whitelist.add '/usr/bin/lxc-stop', '--name', /.*/
+Whitelist.add '/usr/bin/lxc-shutdown', '--name', /.*/
+Whitelist.add '/usr/bin/lxc-attach', '--name', /.*/, '**'
+Whitelist.add '/usr/bin/lxc-attach', '-h'
+
+##
+# Commands from driver/action/remove_temporary_files.rb
+Whitelist.add '/bin/rm', '-rf', %r{\\A\#{base}/.*/rootfs/tmp/.*}
+
+# Watch out for stones
+Whitelist.run!(ARGV)
             EOF
           end
           wrapper.close
